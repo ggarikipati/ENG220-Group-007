@@ -168,7 +168,7 @@ elif tab_selection == "About the Data":
     )
 
     # Reference the image stored in your GitHub repository (use raw URL)
-    image_url = "https://github.com/OctuplePants/ENG220-Group-7/blob/main/DATA.jpg"
+    image_url = "https://raw.githubusercontent.com/OctuplePants/ENG220-Group-7/main/DATA.jpg"
     
     # Display the image
     st.image(image_url, caption="Air Quality Monitoring", use_column_width=True)
