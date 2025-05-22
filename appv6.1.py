@@ -37,11 +37,9 @@ if tab_selection == "Home":
     st.write("### Upload and Visualize Data")
     
     # File uploader for CSV
-    uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
+    data = pd.read_csv('./Water_Data_Clean1.csv') 
 
-    if uploaded_file is not None:
-        # Read the CSV file
-        data = pd.read_csv(uploaded_file)
+    if data is not None:
         st.write("### Data Preview")
         st.dataframe(data)
 
