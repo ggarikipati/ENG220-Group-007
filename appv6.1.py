@@ -37,7 +37,7 @@ if tab_selection == "Home":
     st.write("### Upload and Visualize Data")
     
     # File uploader for CSV
-    data = pd.read_csv('./Water_Data_Clean1.csv') 
+    data = pd.read_csv('./MaineDatav6.csv') 
 
     if data is not None:
         st.write("### Data Preview")
