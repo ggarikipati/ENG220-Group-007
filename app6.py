@@ -1,140 +1,226 @@
-# -*- coding: utf-8 -*-
-# Group 007 - Maine Air Quality Dashboard
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
+import numpy as np  # For standard deviation calculation
+from PIL import Image  # Import the Python Imaging Library (PIL) to handle images
 
-# Optional: Add a small image header (optional styling)
-def add_top_banner(image_url):
-    css = f"""
+# Set up the background image for the top section
+def add_partial_background_image(image_url):
+    partial_background_css = f"""
     <style>
-    .top-banner {{
-        height: 20vh;
+    .top-section {{
+        height: 25vh; /* Set height to 1/4 of the viewport */
         background: url("{image_url}");
-        background-size: contain;
+        background-size: cover;
         background-repeat: no-repeat;
         background-position: center;
     }}
     </style>
-    <div class="top-banner"></div>
+    <div class="top-section"></div>
     """
-    st.markdown(css, unsafe_allow_html=True)
+    st.markdown(partial_background_css, unsafe_allow_html=True)
 
-# Banner (optional)
-image_url = "https://globalprograms.unm.edu/assets/img/peng-logo-wide.png"
-add_top_banner(image_url)
+# Add your image URL here (can also be a local file served as a URL)
+image_url = "https://globalprograms.unm.edu/assets/img/peng-logo-wide.png"  # Provided image URL
+add_partial_background_image(image_url)
 
-# App Title and Description
-st.markdown("<h1 style='text-align: center;'>Group-007: Maine Air Quality Dashboard</h1>", unsafe_allow_html=True)
-
+# Title directly under the image
 st.markdown("""
-### Overview
+    <h1 style='text-align: center;'>ENG-220 Group 7<br>Air Quality<br>Visualization Dashboard</h1>
+""", unsafe_allow_html=True)
 
-This interactive dashboard was developed for a Peace Engineering course to explore and analyze **air quality data in Maine** from **2020 to 2024**.  
-Built with **Streamlit**, the app allows for filtering, statistical analysis, and visualization of pollutant and AQI data.
-
-**Main Features**:
-- View and filter raw air quality data.
-- Calculate averages and standard deviations.
-- Visualize pollutants and AQI trends via multiple chart types.
-""")
-
-# Tabs: Home | About the Data
+# Create a tab navigation bar
 tab_selection = st.radio("Select Tab", ["Home", "About the Data"])
 
-# === HOME TAB ===
+# Content for "Home" tab
 if tab_selection == "Home":
-    st.write("### Data Upload and Exploration")
+    st.write("### Upload and Visualize Data")
+    
+    # File uploader for CSV
+    data = pd.read_csv('./MaineDatav6.csv') 
 
-    try:
-        # Load local CSV
-        data = pd.read_csv(os.path.join(os.path.dirname(__file__), "MaineDatav6.csv"))
+    if data is not None:
+        st.write("### Data Preview")
         st.dataframe(data)
 
-        # Select range
-        total_rows = data.shape[0]
-        start_row = st.number_input("Start Row", 0, total_rows - 1, 0)
-        end_row = st.number_input("End Row", start_row, total_rows - 1, total_rows - 1)
-        filtered_data = data.iloc[start_row:end_row + 1]
+        # Get total number of rows and columns
+        total_rows, total_columns = data.shape
 
-        # Column filter
-        selected_columns = st.multiselect("Select Columns", data.columns.tolist(), default=data.columns.tolist())
-        filtered_data = filtered_data[selected_columns]
+        # Inputs for start and end rows
+        st.write("### Select Row Range for Analysis")
+        start_row = st.number_input(
+            "Start Row (0-indexed)", min_value=0, max_value=total_rows - 1, value=0, step=1
+        )
+        end_row = st.number_input(
+            "End Row (0-indexed, inclusive)", min_value=start_row, max_value=total_rows - 1, value=total_rows - 1, step=1
+        )
+
+        # Filter the data for the selected row range
+        filtered_data = data.iloc[start_row : end_row + 1]
+        st.write("### Filtered Data Preview (Rows)")
         st.dataframe(filtered_data)
 
-        # Standard Deviation
-        st.write("### Standard Deviation")
-        std_col = st.selectbox("Select Column for Std Dev", selected_columns)
+        # Multiselect for column filtering
+        st.write("### Select Columns for Analysis")
+        selected_columns = st.multiselect(
+            "Select Columns",
+            options=data.columns.tolist(),
+            default=data.columns.tolist()  # Default to all columns
+        )
+
+        # Filter the data for selected columns
+        filtered_data = filtered_data[selected_columns]
+        st.write("### Filtered Data Preview (Rows & Columns)")
+        st.dataframe(filtered_data)
+
+        # Standard Deviation Calculator
+        st.write("### Standard Deviation Calculator")
+        std_column = st.selectbox("Select Column for Standard Deviation", selected_columns)
         if st.button("Calculate Standard Deviation"):
             try:
-                std_result = np.std(filtered_data[std_col].astype(float), ddof=1)
-                st.success(f"Standard Deviation of '{std_col}': {std_result}")
-            except:
-                st.error("Selected column must be numeric.")
+                std_values = filtered_data[std_column].astype(float)
+                std_result = np.std(std_values, ddof=1)  # Using sample standard deviation
+                st.success(f"The standard deviation of '{std_column}' is: {std_result}")
+            except ValueError:
+                st.error(f"Selected column '{std_column}' contains non-numeric data. Please select a numeric column.")
 
-        # Average
-        st.write("### Average")
-        avg_col = st.selectbox("Select Column for Average", selected_columns)
+        # Average Calculator
+        st.write("### Average Calculator")
+        avg_column = st.selectbox("Select Column for Average", selected_columns)
         if st.button("Calculate Average"):
             try:
-                avg_result = np.mean(filtered_data[avg_col].astype(float))
-                st.success(f"Average of '{avg_col}': {avg_result}")
-            except:
-                st.error("Selected column must be numeric.")
+                avg_values = filtered_data[avg_column].astype(float)
+                avg_result = np.mean(avg_values)  # Calculate the mean (average)
+                st.success(f"The average of '{avg_column}' is: {avg_result}")
+            except ValueError:
+                st.error(f"Selected column '{avg_column}' contains non-numeric data. Please select a numeric column.")
 
-        # Visualization
-        st.write("### Plot")
-        x_col = st.selectbox("X-axis", selected_columns)
-        y_col = st.selectbox("Y-axis", selected_columns)
-        chart_type = st.selectbox("Chart Type", ["Line", "Scatter", "Bar", "Pie"])
+        # Dropdown for selecting columns for plotting
+        x_column = st.selectbox("Select X-axis column", selected_columns)
+        y_column = st.selectbox("Select Y-axis column", selected_columns)
 
+        # Dropdown for graph type
+        graph_type = st.selectbox(
+            "Select Graph Type",
+            ["Line", "Scatter", "Bar", "Pie"]
+        )
+
+        # Plot button
         if st.button("Plot Graph"):
             fig, ax = plt.subplots()
-            if chart_type == "Line":
-                ax.plot(filtered_data[x_col], filtered_data[y_col], marker='o')
-            elif chart_type == "Scatter":
-                ax.scatter(filtered_data[x_col], filtered_data[y_col])
-            elif chart_type == "Bar":
-                ax.bar(filtered_data[x_col], filtered_data[y_col])
-            elif chart_type == "Pie":
-                if len(filtered_data[x_col].unique()) <= 10:
+
+            if graph_type == "Line":
+                ax.plot(filtered_data[x_column], filtered_data[y_column], marker='o')
+                ax.set_title(f"{y_column} vs {x_column} (Line Plot)")
+
+            elif graph_type == "Scatter":
+                ax.scatter(filtered_data[x_column], filtered_data[y_column])
+                ax.set_title(f"{y_column} vs {x_column} (Scatter Plot)")
+
+            elif graph_type == "Bar":
+                ax.bar(filtered_data[x_column], filtered_data[y_column])
+                ax.set_title(f"{y_column} vs {x_column} (Bar Chart)")
+
+            elif graph_type == "Pie":
+                # Pie chart only makes sense for single-column data
+                if len(filtered_data[x_column].unique()) <= 10:  # Limit to 10 unique categories for readability
                     plt.pie(
-                        filtered_data[y_col],
-                        labels=filtered_data[x_col],
+                        filtered_data[y_column],
+                        labels=filtered_data[x_column],
                         autopct='%1.1f%%',
                         startangle=90,
                     )
+                    plt.title(f"{y_column} (Pie Chart)")
                 else:
-                    st.error("Pie chart requires fewer than 10 unique categories.")
-                    st.stop()
+                    st.error("Pie chart requires fewer unique categories in the X-axis.")
 
-            if chart_type != "Pie":
-                ax.set_title(f"{y_col} vs {x_col}")
-                ax.set_xlabel(x_col)
-                ax.set_ylabel(y_col)
+            if graph_type != "Pie":
+                ax.set_xlabel(x_column)
+                ax.set_ylabel(y_column)
                 st.pyplot(fig)
             else:
                 st.pyplot(plt)
 
-        st.info("Tip: Select numeric columns for accurate statistical analysis and plots.")
+        st.write("Tip: Ensure the selected columns are numeric for meaningful plots.")
+    else:
+        st.info("Please upload a CSV file to get started.")
 
-    except FileNotFoundError:
-        st.error("CSV file 'MaineDatav6.csv' not found. Please ensure it's in the same directory.")
+# Content for "About the Data" tab
+elif tab_selection == "About the Data":
+    st.write("### About the Data")
+    st.write(
+        """
+        This dataset contains air quality data collected from various monitoring stations.
+        The data includes measurements of pollutants such as PM2.5, PM10, CO, and other 
+        air quality indicators across different regions and times. 
 
-# === ABOUT TAB ===
-else:
-    st.subheader("About the Dataset")
-    st.markdown("""
-    The dataset contains **air quality data for Maine** from **2020 to 2024**, including:
-    - Number of days categorized by AQI levels (Good, Moderate, Unhealthy, etc.)
-    - Specific pollutant readings (CO, NO2, O3, PM2.5, PM10)
-    - AQI statistics: Max, Median, 90th Percentile
+        Two sets of data are included:
+        1. **The raw data from 2020 to 2024**  
+        The raw measurements collected for each year between 2020 and 2024.
 
-    It provides both **daily raw data** and **annual averages** for exploring air quality trends over time.
-    """)
+        2. **The yearly average of the data from 2020 to 2024**  
+        These are the average values calculated for each year, providing an overall view of the data trends over time.
 
-    # Display image from GitHub (optional)
+        An average and standard deviation calculator is available to calculate more specific data, allowing users to perform more in-depth statistical analysis.
+        """
+    )
+
+    # Reference the image stored in your GitHub repository (use raw URL)
     image_url = "https://raw.githubusercontent.com/OctuplePants/ENG220-Group-7/main/DATA.jpg"
+    
+    # Display the image
     st.image(image_url, caption="Air Quality Monitoring", use_column_width=True)
+
+    # New section for detailed explanation about the data
+    st.write(
+        """
+        ### Data Descriptions:
+        
+        **# Days with AQI**  
+        Number of days in the year having an Air Quality Index value. This is the number of days on which measurements from any monitoring site in the county or MSA were reported to the AQS database.
+
+        **# Days Good**  
+        Number of days in the year having an AQI value 0 through 50.
+
+        **# Days Moderate**  
+        Number of days in the year having an AQI value 51 through 100.
+
+        **# Days Unhealthy for Sensitive Groups**  
+        Number of days in the year having an AQI value 101 through 150.
+
+        **# Days Unhealthy**  
+        Number of days in the year having an AQI value 151 through 200.
+
+        **# Days Very Unhealthy**  
+        Number of days in the year having an AQI value 201 through 300.
+
+        **# Days Hazardous**  
+        Number of days in the year having an AQI value 301 or higher.
+
+        **AQI Max**  
+        The highest daily AQI value in the year.
+
+        **AQI 90th %ile**  
+        90 percent of daily AQI values during the year were less than or equal to the 90th percentile value.
+
+        **AQI Median**  
+        Half of daily AQI values during the year were less than or equal to the median value, and half equaled or exceeded it.
+
+        **# Days CO**  
+        The number of days in the year when CO was the main pollutant.
+
+        **# Days NO2**  
+        The number of days in the year when NO2 was the main pollutant.
+
+        **# Days O3**  
+        The number of days in the year when O3 was the main pollutant.
+
+        **# Days PM2.5**  
+        The number of days in the year when PM2.5 was the main pollutant.
+
+        **# Days PM10**  
+        The number of days in the year when PM10 was the main pollutant.
+        
+        A daily index value is calculated for each air pollutant measured. The highest of those index values is the AQI value, and the pollutant responsible for...
+        """
+    )
